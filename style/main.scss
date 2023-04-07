@@ -1,0 +1,19 @@
+body {
+  background-color: black;
+  color: white;
+}
+
+@media screen and (prefers-color-scheme: light) {
+  body {
+    background-color: white;
+    color: black;
+  }
+}
+
+//
+//@media (prefers-color-scheme: dark) {
+//}
+
+.error h1, .error h2, .error h3, .error h4, .error h5, .error h6 {
+  color: red;
+}
