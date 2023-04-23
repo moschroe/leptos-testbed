@@ -28,11 +28,15 @@ pub fn App(cx: Scope) -> impl IntoView {
         // sets the document title
         <Title text="Welcome to Leptos"/>
 
+        <a href="/">"Home"</a>" "
+        <a href="/second">"Second View"</a>
+
         // content for this welcome page
         <Router>
             <main>
                 <Routes>
-                    <Route path="" view=|cx| view! { cx, <HomePage/> }/>
+                    <Route path="/" view=|cx| view! { cx, <HomePage/> }/>
+                    <Route path="/second" view=|cx| view! { cx, <SecondView/> }/>
                 </Routes>
             </main>
         </Router>
@@ -105,6 +109,70 @@ fn HomePage(cx: Scope) -> impl IntoView {
                 <ul>
                     {apps_view}
                 </ul>
+            </Transition>
+        </ErrorBoundary>
+    }
+}
+
+#[component]
+fn SecondView(cx: Scope) -> impl IntoView {
+    let act_update: Action<(), ResFetchAppConfigs> = create_action(cx, |_: &()| fetch_apps());
+    let on_click = move |_| act_update.dispatch(());
+
+    let fallback = move |cx, errors: RwSignal<Errors>| {
+        let error_list = move || {
+            errors.with(|errors| {
+                errors
+                    .iter()
+                    .map(|(_, e)| view! { cx, <li>{format!("{:?}", e)}</li>})
+                    .collect::<Vec<_>>()
+            })
+        };
+
+        view! { cx,
+            <div class="error">
+                <h2>"Error"</h2>
+                <ul>{error_list}</ul>
+            </div>
+        }
+    };
+
+    let view_instances = move || {
+        act_update
+            .value()
+            .with(|opt_res| -> Result<Vec<_>, ServerFnError> {
+                debug!("act_update.value()! {:?}", opt_res);
+                match opt_res{
+                    Some(Ok(_))=>{
+                Ok(vec![
+                    view! {cx, <table><tr><td>{act_update.version().get()}" placeholder H3"</td></tr></table>},
+                ])
+
+                    }
+                    Some(Err(err)) => Err(err.clone()),
+                    None => Ok(vec![]),
+                }
+            })
+    };
+
+    // initial load
+    #[cfg(target_family = "wasm")]
+    {
+        set_timeout(
+            move || {
+                info!("timeout dispatching load...");
+                act_update.dispatch(());
+            },
+            Duration::from_millis(500),
+        );
+    }
+
+    view! { cx,
+        <h1>"second view"</h1>
+        <button on:click=on_click>"Update!"</button>
+        <ErrorBoundary fallback>
+            <Transition fallback=move || view! { cx, <div>"Loading (Suspense Fallback)..."</div>}>
+                {view_instances}
             </Transition>
         </ErrorBoundary>
     }
